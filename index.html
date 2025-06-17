@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Gesture Flip Game</title>
   <style>
     body {
@@ -67,12 +67,19 @@
       font-size: 1.2rem;
       border-radius: 8px;
       cursor: pointer;
+      margin: 5px;
     }
 
     .result {
       margin-top: 20px;
       font-size: 1.5rem;
       font-weight: bold;
+    }
+
+    canvas {
+      margin-top: 20px;
+      border-radius: 8px;
+      border: 2px solid #00b894;
     }
   </style>
 </head>
@@ -86,10 +93,10 @@
 
   <div class="result" id="result"></div>
 
-  <!-- TensorFlow.js - задължителен -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<!-- Teachable Machine -->
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <!-- TensorFlow.js библиотека (задължителна) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+  <!-- Teachable Machine библиотека -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
   <script>
     const gestures = ['✊', '🖐️', '☝️'];
@@ -104,12 +111,12 @@
     const submitBtn = document.getElementById('submit');
 
     async function initModel() {
-      const URL = "model/";
+      const URL = "./"; // Моделът е в същата папка като index.html
       model = await tmImage.load(URL + "model.json", URL + "metadata.json");
       webcam = new tmImage.Webcam(200, 200, true);
       await webcam.setup();
       await webcam.play();
-      document.body.appendChild(webcam.canvas); // показваме камерата
+      document.body.appendChild(webcam.canvas);
       webcam.canvas.style.marginTop = "20px";
     }
 
@@ -140,7 +147,7 @@
       sequence = [];
       const cards = [];
 
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         const index = Math.floor(Math.random() * gestures.length);
         sequence.push(gestureLabels[index]);
         const { container, card } = createCard(gestures[index]);
@@ -156,6 +163,8 @@
       }
 
       submitBtn.style.display = 'inline-block';
+      resultDiv.textContent = '';
+      userInput = [];
     }
 
     async function getPrediction() {
@@ -168,7 +177,7 @@
       userInput = [];
       resultDiv.textContent = "Reading gestures...";
 
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         await new Promise(r => setTimeout(r, 1000));
         const gesture = await getPrediction();
         userInput.push(gesture);
@@ -191,7 +200,7 @@
     startBtn.addEventListener('click', showSequence);
     submitBtn.addEventListener('click', captureGestures);
 
-    initModel(); // зареждаме модела и камерата при стартиране
+    initModel();
   </script>
 </body>
 </html>
