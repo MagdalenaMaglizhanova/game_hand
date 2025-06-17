@@ -76,8 +76,11 @@
       font-weight: bold;
     }
 
-    canvas {
+    #camera-container {
       margin-top: 20px;
+    }
+
+    canvas {
       border-radius: 8px;
       border: 2px solid #00b894;
     }
@@ -91,9 +94,11 @@
   <button id="start">Start Game</button>
   <button id="submit" style="display:none;">Submit Gestures</button>
 
+  <div id="camera-container"></div>
+
   <div class="result" id="result"></div>
 
-  <!-- TensorFlow.js библиотека (задължителна) -->
+  <!-- TensorFlow.js библиотека -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
   <!-- Teachable Machine библиотека -->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
@@ -111,12 +116,16 @@
     const submitBtn = document.getElementById('submit');
 
     async function initModel() {
-      const URL = "./"; // Моделът е в същата папка като index.html
+      const URL = "./"; // моделът е в същата папка
       model = await tmImage.load(URL + "model.json", URL + "metadata.json");
       webcam = new tmImage.Webcam(200, 200, true);
       await webcam.setup();
       await webcam.play();
-      document.body.appendChild(webcam.canvas);
+
+      const cameraDiv = document.getElementById('camera-container');
+      cameraDiv.innerHTML = ''; // изчистване при презареждане
+      cameraDiv.appendChild(webcam.canvas);
+
       webcam.canvas.style.marginTop = "20px";
     }
 
