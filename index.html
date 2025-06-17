@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gesture Memory Challenge</title>
+  <title>Gesture Flip Game</title>
   <style>
     :root {
       --primary: #00b894;
@@ -166,14 +166,14 @@
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
       border: 4px solid var(--primary);
       margin-bottom: 20px;
-      background: #000;
+      background: #000; /* Fallback background */
     }
 
     #webcam-container {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1);
+      transform: scaleX(-1); /* Mirror effect */
     }
 
     .gesture-indicator {
@@ -228,29 +228,6 @@
       padding: 20px;
     }
 
-    .capture-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-      margin-top: 20px;
-    }
-
-    .captured-gestures {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .captured-gesture {
-      font-size: 2rem;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 10px;
-      border-radius: 8px;
-      min-width: 60px;
-      text-align: center;
-    }
-
     @media (max-width: 768px) {
       :root {
         --card-width: 80px;
@@ -297,12 +274,6 @@
         <video id="webcam-container" autoplay playsinline></video>
       </div>
       <div class="gesture-indicator" id="gesture-indicator">👆 Show your gesture here</div>
-      
-      <div class="capture-section" id="capture-section" style="display: none;">
-        <div class="captured-gestures" id="captured-gestures"></div>
-        <button id="capture">Capture Gesture</button>
-        <p>Current gesture: <span id="current-gesture-number">1</span>/3</p>
-      </div>
     </div>
   </div>
 
@@ -318,7 +289,6 @@
     let userInput = [];
     let model, webcam;
     let isReadingGestures = false;
-    let currentGestureToCapture = 0;
 
     // DOM elements
     const deck = document.getElementById('deck');
@@ -330,10 +300,6 @@
     const cameraContainer = document.getElementById('camera-container');
     const cameraPlaceholder = document.getElementById('camera-placeholder');
     const webcamVideo = document.getElementById('webcam-container');
-    const captureSection = document.getElementById('capture-section');
-    const captureBtn = document.getElementById('capture');
-    const capturedGesturesDiv = document.getElementById('captured-gestures');
-    const currentGestureNumber = document.getElementById('current-gesture-number');
 
     // Initialize the model and webcam
     async function initModel() {
@@ -396,7 +362,7 @@
 
     // Prediction loop to show current gesture
     async function loop() {
-      if (webcam && model) {
+      if (webcam && model && !isReadingGestures) {
         const prediction = await getPrediction();
         gestureIndicator.textContent = `${gestures[gestureLabels.indexOf(prediction)]} ${prediction}`;
       }
@@ -452,69 +418,54 @@
         await new Promise(r => setTimeout(r, 300));
       }
 
+      submitBtn.disabled = false;
       resultDiv.textContent = "Now repeat the sequence!";
       resultDiv.className = "result";
       userInput = [];
       startBtn.disabled = false;
-      
-      // Show capture section
-      captureSection.style.display = "flex";
-      currentGestureToCapture = 0;
-      currentGestureNumber.textContent = "1";
-      capturedGesturesDiv.innerHTML = "";
     }
 
     // Get prediction from the model
     async function getPrediction() {
-      if (!webcam || !model) return "unknown";
+      if (!webcam || !model) return;
       const predictions = await model.predict(webcam.canvas);
       predictions.sort((a, b) => b.probability - a.probability);
       return predictions[0].className;
     }
 
-    // Capture user gesture
-    async function captureGesture() {
+    // Capture user gestures
+    async function captureGestures() {
       if (isReadingGestures) return;
       
       isReadingGestures = true;
-      captureBtn.disabled = true;
+      submitBtn.disabled = true;
+      userInput = [];
+      resultDiv.textContent = "Get ready...";
+      resultDiv.className = "result";
       
-      // Show "Capturing..." message
-      const originalText = gestureIndicator.textContent;
-      gestureIndicator.textContent = "Capturing...";
-      
-      await new Promise(r => setTimeout(r, 500)); // small delay for better UX
-      
-      const gesture = await getPrediction();
-      userInput.push(gesture);
-      
-      // Add to captured gestures display
-      const gestureEmoji = gestures[gestureLabels.indexOf(gesture)];
-      const gestureDiv = document.createElement('div');
-      gestureDiv.className = 'captured-gesture';
-      gestureDiv.textContent = gestureEmoji;
-      gestureDiv.title = gesture; // show class name on hover
-      capturedGesturesDiv.appendChild(gestureDiv);
-      
-      // Show feedback
-      gestureIndicator.textContent = `Captured: ${gestureEmoji} (${gesture})`;
-      gestureIndicator.style.color = gesture === sequence[currentGestureToCapture] ? 'var(--success)' : 'var(--error)';
-      
-      currentGestureToCapture++;
-      currentGestureNumber.textContent = currentGestureToCapture + 1;
-      
-      // If all gestures captured, enable submit button
-      if (currentGestureToCapture >= sequence.length) {
-        submitBtn.disabled = false;
-        captureSection.style.display = "none";
+      await new Promise(r => setTimeout(r, 1000));
+
+      // Capture 3 gestures (matching sequence length)
+      for (let i = 0; i < sequence.length; i++) {
+        resultDiv.textContent = `Show gesture ${i+1} of ${sequence.length}`;
+        progressBar.style.width = `${(i / sequence.length) * 100}%`;
+        
+        await new Promise(r => setTimeout(r, 800)); // time to prepare
+        const gesture = await getPrediction();
+        userInput.push(gesture);
+        
+        // Show feedback
+        gestureIndicator.textContent = `${gestures[gestureLabels.indexOf(gesture)]} ${gesture}`;
+        gestureIndicator.style.color = gesture === sequence[i] ? 'var(--success)' : 'var(--error)';
+        
+        await new Promise(r => setTimeout(r, 500)); // show feedback
+        gestureIndicator.style.color = '';
       }
       
-      await new Promise(r => setTimeout(r, 800)); // show feedback
-      gestureIndicator.style.color = '';
-      gestureIndicator.textContent = originalText;
-      
+      progressBar.style.width = '100%';
+      checkResult();
       isReadingGestures = false;
-      captureBtn.disabled = false;
+      submitBtn.disabled = false;
     }
 
     // Check if user input matches the sequence
@@ -538,15 +489,11 @@
       setTimeout(() => {
         progressBar.style.width = '0%';
       }, 2000);
-      
-      // Reset user input
-      userInput = [];
     }
 
     // Event listeners
     startBtn.addEventListener('click', showSequence);
-    submitBtn.addEventListener('click', checkResult);
-    captureBtn.addEventListener('click', captureGesture);
+    submitBtn.addEventListener('click', captureGestures);
 
     // Initialize on load
     window.addEventListener('load', initModel);
